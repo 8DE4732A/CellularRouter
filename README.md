@@ -82,6 +82,24 @@ $ANDROID_HOME/tools/bin/gradle assembleDebug
 
 生成的APK位置: `app/build/outputs/apk/debug/app-debug.apk`
 
+## GitHub Actions 自动构建
+
+本项目配置了GitHub Actions，支持自动化构建：
+
+### 手动构建Release APK
+
+1. 访问GitHub仓库的 **Actions** 页面
+2. 选择 **Build Release APK** 工作流
+3. 点击 **Run workflow**
+4. 输入版本号（如：1.0.0）
+5. 构建完成后从Artifacts下载APK
+
+### 自动构建Debug APK
+
+每次推送到main分支或创建Pull Request时，会自动构建Debug APK。
+
+详细说明请查看: [GitHub Actions文档](.github/ACTIONS.md)
+
 ## 许可证
 
 MIT License
