@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">蜂窝路由器</string>
+    
+    <!-- Main Activity -->
+    <string name="network_status">网络状态</string>
+    <string name="wifi_status">WiFi状态</string>
+    <string name="cellular_status">蜂窝网络</string>
+    <string name="connected">已连接</string>
+    <string name="disconnected">未连接</string>
+    <string name="unavailable">不可用</string>
+    
+    <!-- Configuration -->
+    <string name="configuration">配置</string>
+    <string name="proxy_port">代理端口</string>
+    <string name="port_hint">1080</string>
+    <string name="protocol_info">支持 SOCKS5 和 HTTP 协议</string>
+    <string name="invalid_port">端口号无效（1024-65535）</string>
+    
+    <!-- Traffic Statistics -->
+    <string name="traffic_stats">流量统计</string>
+    <string name="upload">上传</string>
+    <string name="download">下载</string>
+    <string name="total">总计</string>
+    <string name="reset_stats">重置统计</string>
+    
+    <!-- Control -->
+    <string name="start_proxy">启动代理</string>
+    <string name="stop_proxy">停止代理</string>
+    <string name="proxy_running">代理运行中</string>
+    <string name="proxy_stopped">代理已停止</string>
+    
+    <!-- Errors -->
+    <string name="error_start_failed">启动代理失败</string>
+    <string name="error_cellular_unavailable">蜂窝网络不可用</string>
+    <string name="error_port_in_use">端口已被占用</string>
+    
+    <!-- Info -->
+    <string name="info_title">使用说明</string>
+    <string name="info_message">1. 确保设备已连接蜂窝网络\n2. 配置代理端口并启动服务\n3. 在其他设备上配置代理:\n   - SOCKS5: 设备IP:端口\n   - HTTP: 设备IP:端口\n4. 流量将通过蜂窝网络转发</string>
+</resources>
