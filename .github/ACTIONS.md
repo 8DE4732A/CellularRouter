@@ -17,9 +17,16 @@
 
 ### 构建产物
 
-- APK文件名格式: `CellularRouter-v{版本}-{时间戳}.apk`
-- 保留期: 30天
-- 下载位置: Actions运行页面的Artifacts部分
+- **自动创建GitHub Release**: 版本tag为 `v{版本号}`
+- **APK自动上传到Release**: 可直接从Release页面下载
+- **Release说明**: 包含功能特性、系统要求等信息
+- **Artifacts备份**: 同时上传到Actions Artifacts，保留30天
+
+### 下载APK
+
+构建完成后，可以从以下位置下载APK：
+1. **GitHub Releases页面**（推荐）- 永久保存
+2. Actions运行页面的Artifacts部分 - 保留30天
 
 ### 配置Release签名（可选）
 
