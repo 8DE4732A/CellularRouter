@@ -66,13 +66,64 @@ jobs:
           path: app/build/outputs/apk/release/*.apk
           retention-days: 30
       
+      - name: 获取APK文件名
+        id: get-apk
+        run: |
+          APK_PATH=$(ls app/build/outputs/apk/release/*.apk | head -n 1)
+          APK_NAME=$(basename "$APK_PATH")
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "apk_name=$APK_NAME" >> $GITHUB_OUTPUT
+      
+      - name: 创建GitHub Release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.event.inputs.version_name }}
+          release_name: Release v${{ github.event.inputs.version_name }}
+          body: |
+            ## CellularRouter v${{ github.event.inputs.version_name }}
+            
+            ### 📦 下载
+            下载下方的APK文件安装到Android设备
+            
+            ### ✨ 功能特性
+            - 统一端口SOCKS5+HTTP代理
+            - 自动协议检测
+            - 蜂窝网络强制路由
+            - 实时流量统计
+            - Material Design 3界面
+            
+            ### 📋 系统要求
+            - Android 6.0 (API 23) 或更高版本
+            - 设备需支持蜂窝网络
+            
+            ### 🔧 构建信息
+            - 构建时间: ${{ github.run_id }}
+            - Commit: ${{ github.sha }}
+            - 分支: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+      
+      - name: 上传APK到Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ${{ steps.get-apk.outputs.apk_path }}
+          asset_name: ${{ steps.get-apk.outputs.apk_name }}
+          asset_content_type: application/vnd.android.package-archive
+      
       - name: 生成构建信息
         run: |
           echo "### 构建完成 ✅" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**版本**: ${{ github.event.inputs.version_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release**: [v${{ github.event.inputs.version_name }}](${{ steps.create-release.outputs.html_url }})" >> $GITHUB_STEP_SUMMARY
           echo "**构建时间**: $(date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_STEP_SUMMARY
           echo "**分支**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "APK已上传到Artifacts，可在Actions页面下载" >> $GITHUB_STEP_SUMMARY
+          echo "✅ APK已发布到GitHub Release" >> $GITHUB_STEP_SUMMARY
