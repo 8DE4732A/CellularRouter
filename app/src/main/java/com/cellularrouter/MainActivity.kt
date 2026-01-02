@@ -11,6 +11,11 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -18,6 +23,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.cellularrouter.data.ProxyConfig
 import com.cellularrouter.databinding.ActivityMainBinding
+import com.cellularrouter.frpc.FrpcConfig
+import com.cellularrouter.frpc.FrpcService
+import com.cellularrouter.frpc.ProxyType
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.switchmaterial.SwitchMaterial
 
 /**
  * Main activity for the Cellular Router app
@@ -33,6 +43,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private var proxyService: ProxyService? = null
     private var isBound = false
+    
+    private var frpcService: FrpcService? = null
+    private var frpcBound = false
     
     private val handler = Handler(Looper.getMainLooper())
     private val updateRunnable = object : Runnable {
@@ -53,6 +66,20 @@ class MainActivity : AppCompatActivity() {
         override fun onServiceDisconnected(name: ComponentName?) {
             proxyService = null
             isBound = false
+        }
+    }
+    
+    private val frpcConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as FrpcService.FrpcBinder
+            frpcService = binder.getService()
+            frpcBound = true
+            updateUI()
+        }
+        
+        override fun onServiceDisconnected(name: ComponentName?) {
+            frpcService = null
+            frpcBound = false
         }
     }
     
@@ -86,6 +113,19 @@ class MainActivity : AppCompatActivity() {
             resetStats()
         }
         
+        // FRPC控制 - 如果UI元素存在
+        try {
+            binding.frpcConfigButton.setOnClickListener {
+                showFrpcConfigDialog()
+            }
+            
+            binding.frpcControlButton.setOnClickListener {
+                toggleFrpc()
+            }
+        } catch (e: Exception) {
+            // UI元素不存在，使用菜单代替
+        }
+        
         // Show info dialog on first launch
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
         if (prefs.getBoolean("first_launch", true)) {
@@ -93,8 +133,9 @@ class MainActivity : AppCompatActivity() {
             prefs.edit().putBoolean("first_launch", false).apply()
         }
         
-        // Bind to service
+        // Bind to services
         bindToService()
+        bindToFrpcService()
     }
     
     override fun onResume() {
@@ -107,11 +148,49 @@ class MainActivity : AppCompatActivity() {
         handler.removeCallbacks(updateRunnable)
     }
     
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+    
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.menu_frpc_config -> {
+                showFrpcConfigDialog()
+                true
+            }
+            R.id.menu_frpc_toggle -> {
+                toggleFrpc()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+    
+    override fun onPrepareOptionsMenu(menu: Menu?): Boolean {
+        val toggleItem = menu?.findItem(R.id.menu_frpc_toggle)
+        val isRunning = frpcService?.isRunning() == true
+        toggleItem?.title = if (isRunning) {
+            getString(R.string.frpc_stop)
+        } else {
+            getString(R.string.frpc_start)
+        }
+        toggleItem?.setIcon(
+            if (isRunning) android.R.drawable.ic_media_pause
+            else android.R.drawable.ic_media_play
+        )
+        return super.onPrepareOptionsMenu(menu)
+    }
+    
     override fun onDestroy() {
         super.onDestroy()
         if (isBound) {
             unbindService(serviceConnection)
             isBound = false
+        }
+        if (frpcBound) {
+            unbindService(frpcConnection)
+            frpcBound = false
         }
     }
     
@@ -121,6 +200,14 @@ class MainActivity : AppCompatActivity() {
     private fun bindToService() {
         val intent = Intent(this, ProxyService::class.java)
         bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+    }
+    
+    /**
+     * Bind to FrpcService
+     */
+    private fun bindToFrpcService() {
+        val intent = Intent(this, FrpcService::class.java)
+        bindService(intent, frpcConnection, Context.BIND_AUTO_CREATE)
     }
     
     /**
@@ -257,6 +344,158 @@ class MainActivity : AppCompatActivity() {
             binding.controlButton.setIconResource(android.R.drawable.ic_media_play)
             binding.portEditText.isEnabled = true
         }
+        
+        // Update FRPC menu
+        invalidateOptionsMenu()
+        
+        // Update FRPC status UI if elements exist
+        try {
+            val frpcIsRunning = frpcService?.isRunning() == true
+            binding.frpcStatusText.text = if (frpcIsRunning) {
+                getString(R.string.frpc_running)
+            } else {
+                getString(R.string.frpc_stopped)
+            }
+            binding.frpcStatusText.setTextColor(
+                ContextCompat.getColor(this, if (frpcIsRunning) R.color.success else R.color.error)
+            )
+            
+           binding.frpcControlButton.text = if (frpcIsRunning) {
+                getString(R.string.frpc_stop)
+            } else {
+                getString(R.string.frpc_start)
+            }
+            binding.frpcControlButton.setIconResource(
+                if (frpcIsRunning) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+            )
+        } catch (e: Exception) {
+            // UI元素不存在，已通过菜单控制
+        }
+    }
+    
+    /**
+     * Toggle FRPC service on/off
+     */
+    private fun toggleFrpc() {
+        if (frpcService?.isRunning() == true) {
+            stopFrpcService()
+        } else {
+            startFrpcService()
+        }
+    }
+    
+    /**
+     * Start FRPC service
+     */
+    private fun startFrpcService() {
+        // Check WiFi availability
+        val networkManager = proxyService?.getNetworkManager()
+        if (networkManager?.isWifiAvailable() != true) {
+            Toast.makeText(this, R.string.error_frpc_wifi_unavailable, Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        // Load and validate config
+        val config = FrpcConfig.load(this)
+        if (!config.isValid()) {
+            Toast.makeText(this, R.string.error_frpc_invalid_config, Toast.LENGTH_SHORT).show()
+            showFrpcConfigDialog()
+            return
+        }
+        
+        // Start service
+        val intent = Intent(this, FrpcService::class.java).apply {
+            action = FrpcService.ACTION_START
+        }
+        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+        
+        Toast.makeText(this, "正在启动FRPC...", Toast.LENGTH_SHORT).show()
+        updateUI()
+    }
+    
+    /**
+     * Stop FRPC service
+     */
+    private fun stopFrpcService() {
+        val intent = Intent(this, FrpcService::class.java).apply {
+            action = FrpcService.ACTION_STOP
+        }
+        startService(intent)
+        
+        Toast.makeText(this, "正在停止FRPC...", Toast.LENGTH_SHORT).show()
+        updateUI()
+    }
+    
+    /**
+     * Show FRPC configuration dialog
+     */
+    private fun showFrpcConfigDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_frpc_config, null)
+        val config = FrpcConfig.load(this)
+        
+        // Initialize views
+        val serverAddrEdit = dialogView.findViewById<TextInputEditText>(R.id.serverAddrEditText)
+        val serverPortEdit = dialogView.findViewById<TextInputEditText>(R.id.serverPortEditText)
+        val authTokenEdit = dialogView.findViewById<TextInputEditText>(R.id.authTokenEditText)
+        val tlsSwitch = dialogView.findViewById<SwitchMaterial>(R.id.tlsEnableSwitch)
+        val proxyTypeDropdown = dialogView.findViewById<AutoCompleteTextView>(R.id.proxyTypeDropdown)
+        val proxyNameEdit = dialogView.findViewById<TextInputEditText>(R.id.proxyNameEditText)
+        val secretKeyEdit = dialogView.findViewById<TextInputEditText>(R.id.secretKeyEditText)
+        val compressionSwitch = dialogView.findViewById<SwitchMaterial>(R.id.useCompressionSwitch)
+        val encryptionSwitch = dialogView.findViewById<SwitchMaterial>(R.id.useEncryptionSwitch)
+        
+        // Set up proxy type dropdown
+        val proxyTypes = ProxyType.values().map { it.displayName }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, proxyTypes)
+        proxyTypeDropdown.setAdapter(adapter)
+        
+        // Populate with saved config
+        serverAddrEdit.setText(config.serverAddr)
+        serverPortEdit.setText(config.serverPort.toString())
+        authTokenEdit.setText(config.authToken)
+        tlsSwitch.isChecked = config.tlsEnable
+        proxyTypeDropdown.setText(config.proxyType.displayName, false)
+        proxyNameEdit.setText(config.proxyName)
+        secretKeyEdit.setText(config.secretKey)
+        compressionSwitch.isChecked = config.useCompression
+        encryptionSwitch.isChecked = config.useEncryption
+        
+        // Sync local port with proxy config
+        val proxyConfig = ProxyConfig.load(this)
+        
+        AlertDialog.Builder(this)
+            .setTitle(R.string.frpc_config_title)
+            .setView(dialogView)
+            .setPositiveButton(R.string.save) { _, _ ->
+                // Save configuration
+                val selectedTypeDisplayName = proxyTypeDropdown.text.toString()
+                val proxyType = ProxyType.values().find { it.displayName == selectedTypeDisplayName }
+                    ?: ProxyType.STCP
+                
+                val newConfig = FrpcConfig(
+                    serverAddr = serverAddrEdit.text.toString(),
+                    serverPort = serverPortEdit.text.toString().toIntOrNull() ?: 7000,
+                    authToken = authTokenEdit.text.toString(),
+                    tlsEnable = tlsSwitch.isChecked,
+                    proxyType = proxyType,
+                    proxyName = proxyNameEdit.text.toString(),
+                    secretKey = secretKeyEdit.text.toString(),
+                    localIP = "127.0.0.1",
+                    localPort = proxyConfig.port,
+                    useCompression = compressionSwitch.isChecked,
+                    useEncryption = encryptionSwitch.isChecked
+                )
+                
+                newConfig.save(this)
+                Toast.makeText(this, "FRPC配置已保存", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
     
     /**
