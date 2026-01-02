@@ -24,12 +24,16 @@ jobs:
           distribution: 'temurin'
           cache: gradle
       
+      - name: 设置Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: 8.4
+      
+      - name: 生成Gradle Wrapper
+        run: gradle wrapper --gradle-version 8.4
+      
       - name: 授予Gradle执行权限
         run: chmod +x gradlew
-      
-      - name: 设置Gradle包装器
-        run: |
-          gradle wrapper --gradle-version 8.2
       
       - name: 清理构建
         run: ./gradlew clean
