@@ -21,7 +21,10 @@ class NetworkManager(private val context: Context) {
     @Volatile
     private var cellularNetwork: Network? = null
     
-    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+    @Volatile
+    private var wifiNetwork: Network? = null
+    
+    private val cellularCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             val capabilities = connectivityManager.getNetworkCapabilities(network)
             if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true) {
@@ -38,19 +41,42 @@ class NetworkManager(private val context: Context) {
         }
     }
     
+    private val wifiCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            val capabilities = connectivityManager.getNetworkCapabilities(network)
+            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
+                wifiNetwork = network
+                Log.d(TAG, "WiFi network available: $network")
+            }
+        }
+        
+        override fun onLost(network: Network) {
+            if (network == wifiNetwork) {
+                wifiNetwork = null
+                Log.d(TAG, "WiFi network lost")
+            }
+        }
+    }
+    
     /**
      * Start monitoring network changes
      */
     fun start() {
         // Request cellular network
-        val request = NetworkRequest.Builder()
+        val cellularRequest = NetworkRequest.Builder()
             .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
             .build()
+        connectivityManager.registerNetworkCallback(cellularRequest, cellularCallback)
         
-        connectivityManager.registerNetworkCallback(request, networkCallback)
+        // Request WiFi network
+        val wifiRequest = NetworkRequest.Builder()
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .build()
+        connectivityManager.registerNetworkCallback(wifiRequest, wifiCallback)
         
-        // Try to find existing cellular network
+        // Try to find existing networks
         findCellularNetwork()
+        findWifiNetwork()
     }
     
     /**
@@ -58,9 +84,10 @@ class NetworkManager(private val context: Context) {
      */
     fun stop() {
         try {
-            connectivityManager.unregisterNetworkCallback(networkCallback)
+            connectivityManager.unregisterNetworkCallback(cellularCallback)
+            connectivityManager.unregisterNetworkCallback(wifiCallback)
         } catch (e: Exception) {
-            Log.e(TAG, "Error unregistering network callback", e)
+            Log.e(TAG, "Error unregistering network callbacks", e)
         }
     }
     
@@ -129,6 +156,95 @@ class NetworkManager(private val context: Context) {
         
         return when {
             capabilities == null -> "不可用"
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) -> "已连接"
+            else -> "无网络"
+        }
+    }
+    
+    /**
+     * Find and cache WiFi network
+     */
+    private fun findWifiNetwork() {
+        connectivityManager.allNetworks.forEach { network ->
+            val capabilities = connectivityManager.getNetworkCapabilities(network)
+            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
+                wifiNetwork = network
+                Log.d(TAG, "Found WiFi network: $network")
+                return
+            }
+        }
+    }
+    
+    /**
+     * Check if WiFi network is available
+     */
+    fun isWifiAvailable(): Boolean {
+        return wifiNetwork != null
+    }
+    
+    /**
+     * Bind a socket to the WiFi network
+     * @return true if binding was successful
+     */
+    fun bindSocketToWifi(socket: Socket): Boolean {
+        val network = wifiNetwork
+        if (network == null) {
+            Log.w(TAG, "WiFi network not available")
+            return false
+        }
+        
+        return try {
+            network.bindSocket(socket)
+            Log.d(TAG, "Socket bound to WiFi network")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to bind socket to WiFi", e)
+            false
+        }
+    }
+    
+    /**
+     * Bind a process to the WiFi network (for frpc)
+     * @return true if binding was successful
+     */
+    fun bindProcessToWifi(): Boolean {
+        val network = wifiNetwork
+        if (network == null) {
+            Log.w(TAG, "WiFi network not available for process binding")
+            return false
+        }
+        
+        return try {
+            connectivityManager.bindProcessToNetwork(network)
+            Log.d(TAG, "Process bound to WiFi network")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to bind process to WiFi", e)
+            false
+        }
+    }
+    
+    /**
+     * Unbind process from network
+     */
+    fun unbindProcess() {
+        try {
+            connectivityManager.bindProcessToNetwork(null)
+            Log.d(TAG, "Process network binding cleared")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to unbind process", e)
+        }
+    }
+    
+    /**
+     * Get WiFi network info string
+     */
+    fun getWifiNetworkInfo(): String {
+        val network = wifiNetwork ?: return "未连接"
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+        
+        return when {
+            capabilities == null -> "未连接"
             capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) -> "已连接"
             else -> "无网络"
         }

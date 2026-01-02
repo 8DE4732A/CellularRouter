@@ -38,4 +38,43 @@
     <!-- Info -->
     <string name="info_title">使用说明</string>
     <string name="info_message">1. 确保设备已连接蜂窝网络\n2. 配置代理端口并启动服务\n3. 在其他设备上配置代理:\n   - SOCKS5: 设备IP:端口\n   - HTTP: 设备IP:端口\n4. 流量将通过蜂窝网络转发</string>
+    
+    <!-- FRPC -->
+    <string name="frpc_title">FRPC设置</string>
+    <string name="frpc_status">FRPC状态</string>
+    <string name="frpc_configure">配置FRPC</string>
+    <string name="frpc_start">启动FRPC</string>
+    <string name="frpc_stop">停止FRPC</string>
+    <string name="frpc_running">运行中</string>
+    <string name="frpc_stopped">已停止</string>
+    <string name="frpc_connecting">连接中</string>
+    
+    <!-- FRPC Configuration -->
+    <string name="frpc_config_title">FRPC配置</string>
+    <string name="frpc_server_settings">服务器设置</string>
+    <string name="frpc_proxy_settings">代理设置</string>
+    <string name="frpc_server_addr">服务器地址</string>
+    <string name="frpc_server_port">服务器端口</string>
+    <string name="frpc_auth_token">认证Token</string>
+    <string name="frpc_tls_enable">启用TLS</string>
+    <string name="frpc_proxy_type">代理类型</string>
+    <string name="frpc_proxy_name">代理名称</string>
+    <string name="frpc_secret_key">密钥</string>
+    <string name="frpc_use_compression">使用压缩</string>
+    <string name="frpc_use_encryption">使用加密</string>
+    <string name="frpc_dns_server">DNS服务器</string>
+    
+    <!-- FRPC Errors -->
+    <string name="error_frpc_invalid_config">FRPC配置无效</string>
+    <string name="error_frpc_wifi_unavailable">WiFi网络不可用，FRPC需要WiFi连接</string>
+    <string name="error_frpc_start_failed">FRPC启动失败</string>
+    <string name="error_frpc_already_running">FRPC已在运行</string>
+    
+    <!-- FRPC Info -->
+    <string name="frpc_info_message">FRPC通过WiFi连接到远程服务器，将本地代理暴露到外网。\n\n注意：FRPC流量走WiFi，代理流量走蜂窝网络。</string>
+    
+    <!-- Buttons -->
+    <string name="save">保存</string>
+    <string name="cancel">取消</string>
 </resources>
+
