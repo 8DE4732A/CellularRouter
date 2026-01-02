@@ -99,6 +99,17 @@
                         android:textSize="16sp"
                         android:textStyle="bold"
                         tools:textColor="@color/success" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/checkIpButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/check_ip"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:textSize="12sp"
+                        android:layout_marginStart="8dp" 
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="8dp"/>
                 </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -275,6 +286,85 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- FRPC Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/frpcCard"
+            style="@style/Widget.App.CardView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintTop_toBottomOf="@id/trafficCard"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_marginTop="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="FRPC Service"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary" />
+
+                     <com.google.android.material.button.MaterialButton
+                        android:id="@+id/frpcConfigButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Config"
+                        style="@style/Widget.Material3.Button.TextButton"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- Status -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="12dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Status"
+                        android:textSize="16sp"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/frpcStatusText"
+                         android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/frpc_stopped"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        tools:textColor="@color/error" />
+                </LinearLayout>
+                
+                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/frpcControlButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/frpc_start"
+                    app:icon="@android:drawable/ic_media_play" 
+                    style="@style/Widget.Material3.Button.OutlinedButton"/>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <!-- Control Button -->
         <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
             android:id="@+id/controlButton"
@@ -282,7 +372,7 @@
             android:layout_height="wrap_content"
             android:text="@string/start_proxy"
             app:icon="@android:drawable/ic_media_play"
-            app:layout_constraintTop_toBottomOf="@id/trafficCard"
+            app:layout_constraintTop_toBottomOf="@id/frpcCard"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             android:layout_marginTop="24dp"

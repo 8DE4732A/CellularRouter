@@ -160,6 +160,13 @@ class NetworkManager(private val context: Context) {
             else -> "无网络"
         }
     }
+
+    /**
+     * Get the underlying Cellular Network object
+     */
+    fun getCellularNetworkObject(): Network? {
+        return cellularNetwork
+    }
     
     /**
      * Find and cache WiFi network

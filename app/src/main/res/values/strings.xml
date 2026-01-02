@@ -76,5 +76,10 @@
     <!-- Buttons -->
     <string name="save">保存</string>
     <string name="cancel">取消</string>
+    <!-- Proxy Check -->
+    <string name="check_ip">检测 IP</string>
+    <string name="check_ip_title">当前 IP 信息</string>
+    <string name="checking_ip">正在检测 IP...</string>
+    <string name="error_check_ip">检测失败: %s</string>
 </resources>
 

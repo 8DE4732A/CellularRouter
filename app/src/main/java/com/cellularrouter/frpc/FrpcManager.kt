@@ -160,7 +160,7 @@ class FrpcManager(
             
             try {
                 BufferedReader(InputStreamReader(process.inputStream)).use { reader ->
-                    var line: String?
+                    var line: String? = null
                     while (isRunning && reader.readLine().also { line = it } != null) {
                         Log.d(TAG, "FRPC: $line")
                     }

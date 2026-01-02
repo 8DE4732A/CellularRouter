@@ -28,6 +28,10 @@ import com.cellularrouter.frpc.FrpcService
 import com.cellularrouter.frpc.ProxyType
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.switchmaterial.SwitchMaterial
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Main activity for the Cellular Router app
@@ -136,6 +140,80 @@ class MainActivity : AppCompatActivity() {
         // Bind to services
         bindToService()
         bindToFrpcService()
+
+        // Check IP button
+        try {
+            binding.checkIpButton.setOnClickListener {
+                checkProxyIp()
+            }
+        } catch (e: Exception) {
+            // Button might not be in layout yet
+        }
+    }
+
+    private fun checkProxyIp() {
+        val networkManager = proxyService?.getNetworkManager()
+        if (networkManager == null) {
+            Toast.makeText(this, "服务未连接", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        if (!networkManager.isCellularAvailable()) {
+            Toast.makeText(this, R.string.error_cellular_unavailable, Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.check_ip_title)
+            .setMessage(R.string.checking_ip)
+            .setPositiveButton("OK", null)
+            .show()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val network = networkManager.getCellularNetworkObject()
+                if (network == null) {
+                   withContext(Dispatchers.Main) {
+                        dialog.dismiss()
+                        Toast.makeText(this@MainActivity, R.string.error_cellular_unavailable, Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+
+                val url = java.net.URL("http://ip-api.com/json")
+                val connection = network.openConnection(url) as java.net.HttpURLConnection
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
+                
+                val response = connection.inputStream.bufferedReader().use { it.readText() }
+                
+                // Simple JSON parsing to find "query" field which holds the IP
+                val ip = try {
+                    val queryIndex = response.indexOf("\"query\":\"")
+                    if (queryIndex != -1) {
+                        val startIndex = queryIndex + 9
+                        val endIndex = response.indexOf("\"", startIndex)
+                        if (endIndex != -1) {
+                            response.substring(startIndex, endIndex)
+                        } else response
+                    } else response
+                } catch (e: Exception) {
+                    response
+                }
+
+                withContext(Dispatchers.Main) {
+                    if (dialog.isShowing) {
+                        dialog.setMessage("Current IP: $ip\n\nFull Response:\n$response")
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    if (dialog.isShowing) {
+                        dialog.setMessage(getString(R.string.error_check_ip, e.message))
+                    }
+                }
+            }
+        }
     }
     
     override fun onResume() {
