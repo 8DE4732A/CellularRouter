@@ -8,6 +8,7 @@
 
 ## 功能特性
 
+### 核心代理功能
 - ✅ **统一端口代理**: SOCKS5和HTTP协议共用一个端口
 - ✅ **自动协议检测**: 自动识别SOCKS5和HTTP请求
 - ✅ **蜂窝网络绑定**: 所有代理流量强制通过蜂窝网络
@@ -15,6 +16,13 @@
 - ✅ **简洁界面**: Material Design 3风格UI
 - ✅ **前台服务**: 保持代理服务持续运行
 
+### FRPC集成 (v0.65.0)
+- ✅ **内网穿透**: 通过frp服务器将本地代理暴露到公网
+- ✅ **WiFi专用**: FRPC流量走WiFi，代理流量走蜂窝
+- ✅ **加密传输**: 支持TLS、压缩和加密
+- ✅ **双协议支持**: STCP和XTCP代理类型
+- ✅ **配置加密**: 敏感信息使用系统加密存储
+- ✅ **独立控制**: FRPC服务独立启停
 ## 系统要求
 
 - Android 6.0 (API 23) 或更高版本
@@ -29,6 +37,22 @@
    - **SOCKS5代理**: `手机IP:端口`
    - **HTTP代理**: `手机IP:端口`
 5. 流量将通过手机的蜂窝网络转发
+
+### FRPC配置（可选）
+
+FRPC功能可将本地代理通过frp服务器分享到外网：
+
+1. 确保手机已连接WiFi网络
+2. 点击菜单中的"配置FRPC"
+3. 填写frp服务器信息：
+   - 服务器地址和端口
+   - 认证Token
+   - 代理类型（STCP/XTCP）
+   - 密钥
+4. 保存配置后，点击"启动FRPC"
+5. FRPC通过WiFi连接服务器，本地代理通过蜂窝网络工作
+
+详细配置说明：[FRPC使用文档](FRPC_USAGE.md)
 
 ## 技术架构
 
@@ -45,16 +69,20 @@
 ```
 app/src/main/java/com/cellularrouter/
 ├── MainActivity.kt                    # 主界面
-├── ProxyService.kt                    # 前台服务
+├── ProxyService.kt                    # 代理前台服务
 ├── TrafficMonitor.kt                  # 流量统计
 ├── data/
-│   └── ProxyConfig.kt                 # 配置管理
+│   └── ProxyConfig.kt                 # 代理配置管理
 ├── network/
-│   └── NetworkManager.kt              # 网络管理
-└── proxy/
-    ├── UnifiedProxyServer.kt          # 统一代理服务器
-    ├── Socks5Handler.kt               # SOCKS5处理器
-    └── HttpHandler.kt                 # HTTP处理器
+│   └── NetworkManager.kt              # 网络管理（蜂窝+WiFi）
+├── proxy/
+│   ├── UnifiedProxyServer.kt          # 统一代理服务器
+│   ├── Socks5Handler.kt               # SOCKS5处理器
+│   └── HttpHandler.kt                 # HTTP处理器
+└── frpc/
+    ├── FrpcConfig.kt                  # FRPC配置管理
+    ├── FrpcManager.kt                 # FRPC进程管理
+    └── FrpcService.kt                 # FRPC前台服务
 ```
 
 ## 构建
